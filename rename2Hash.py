@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import hashlib
+import argparse
+
+hashType = "sha256"
 
 def hash(file, method):
 	if not os.path.isdir(file):
@@ -22,29 +26,36 @@ def hash(file, method):
 		return sum
 	else:
 		return "dir"
-        
-unsorted = os.listdir('.')
-filelist = sorted(unsorted, key=len)
 
-for file in filelist:
-	if not file == "rename2Hash.py":
-		filename, file_extension = os.path.splitext(file)
-		if len(sys.argv) >= 2:
-			sum = hash(file, sys.argv[1])
-		else:
-			sum = hash(file, "md5")
-		try:
-			print("Trying to rename: " + file)
-			if os.path.isfile(sum):
-				print("file " + sum + " already exists")
-				if not file == (sum):
-					print("Removing: " + file + " because it is a duplicate")
-					os.remove(file)
-			elif not sum == "dir":
-				os.rename(file, sum)
-				print(file + ' --> ' + sum)
-			else:
-				print("Skipping directory " + file)
-		except Exception as e:
-			print("Error displaying file name.")
-	print("")
+def renameFiles (path):
+	unsorted = os.listdir(path)
+	filelist = sorted(unsorted, key=len)
+	for file in filelist:
+		if not file == "rename2Hash.py":
+			sum = hash(path + "\\" + file, hashType)
+			try:
+				print("Trying to rename: " + file)
+				if os.path.isfile(path + "\\" + sum):                   # 如果文件名已经存在
+					print("file " + sum + " already exists")
+					if file != (sum):
+						print("Removing: " + file + " because it is a duplicate")
+						os.remove(path + "\\" + file)
+				elif sum != "dir":                                      # 非文件夹
+					os.rename(path + "\\" + file, path + "\\" + sum)
+					print(file + ' --> ' + sum)
+				else:                                                   # 如果到了这里说明非文件夹且指定文件不存在
+					renameFiles(path + "\\" + file)
+			except Exception as e:
+				print("Error displaying file name.")
+		print("")
+
+
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser(description='you need to input hash type and directory path')
+	parser.add_argument("--type", type = str, help = "hash type, like md5 sha256, default is sha256")
+	parser.add_argument("--dir", type = str, required = True, help = "Directory path")                 #必要参数
+	args = parser.parse_args()
+	if args.type != None:
+		hashType = args.type
+	renameFiles(args.dir)
+
